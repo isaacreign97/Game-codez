@@ -174,6 +174,7 @@
         <b>Ship Placement:</b>
         <ul>
             <li>Click to place your ships before the game starts. Use the rotate button to change orientation.</li>
+            <li>Press <b>Auto Place</b> to place all ships automatically.</li>
             <li>Ships cannot touch each other, even diagonally.</li>
         </ul>
         <b>Accessibility:</b>
@@ -196,6 +197,7 @@
     <h2 style="color:#145;">Choose Board Size</h2>
     <button class="size-btn" onclick="chooseBoardSize(5)">5 x 5 Board</button>
     <button class="size-btn" onclick="chooseBoardSize(10)">10 x 10 Board</button>
+    <button class="size-btn" onclick="chooseBoardSize(15)">15 x 15 Board</button>
     <br><br>
     <button class="back-btn" onclick="showModeMenu()">Back</button>
 </div>
@@ -206,6 +208,7 @@
     <button class="restart-btn" onclick="restartPlacement()">Restart Placement</button>
     <div class="placement-hint" id="placementHint"></div>
     <button class="mode-btn" style="font-size:18px;padding:10px 24px;" onclick="togglePlacementOrientation()" aria-label="Rotate Ship">Rotate Ship</button>
+    <button class="mode-btn" style="font-size:18px;padding:10px 24px;" onclick="autoPlaceAndStart()" aria-label="Auto Place Ships">Auto Place</button>
     <div style="display:flex;justify-content:center;">
         <div class="board" id="placementBoard"></div>
     </div>
@@ -329,6 +332,17 @@ function setupConfigs() {
             [2,true],
             [2,false],
         ];
+    } else if(gridSize===15){
+        ships = 7;
+        shipConfigs = [
+            [5,true],
+            [4,true],
+            [4,false],
+            [3,true],
+            [3,true],
+            [3,false],
+            [2,true],
+        ];
     } else {
         ships = 5;
         shipConfigs = [
@@ -360,6 +374,11 @@ function chooseBoardSize(size) {
 function togglePlacementOrientation(){
     placementOrientation=!placementOrientation;
     drawPlacementBoard();
+}
+function autoPlaceAndStart(){
+    placementState=Array.from({length:gridSize},()=>Array(gridSize).fill(0));
+    placeShipsRandomly(placementState);
+    startGame();
 }
 function canPlaceShipSafe(grid, x, y, length, isHorizontal) {
     // Must not touch other ships, even diagonally
