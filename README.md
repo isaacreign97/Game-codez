@@ -191,13 +191,21 @@
     <br><br>
     <button class="back-btn" onclick="showMainMenu()">Back to Main Menu</button>
 </div>
+<div id="difficultyMenu" class="center hidden" aria-label="Difficulty selection">
+    <svg class="logo-wave" viewBox="0 0 60 16"><path fill="#1e90ff" d="M0 11c7 0 7-9 14-9s7 9 14 9 7-9 14-9 7 9 14 9v5H0z"/></svg>
+    <h2 style="color:#145;">Choose Difficulty</h2>
+    <button class="mode-btn" onclick="chooseDifficulty('easy')">Easy</button>
+    <button class="mode-btn" onclick="chooseDifficulty('hard')">Hard</button>
+    <br><br>
+    <button class="back-btn" onclick="showDifficultyMenu()">Back</button>
+</div>
 <div id="sizeMenu" class="center hidden" aria-label="Board size selection">
     <svg class="logo-wave" viewBox="0 0 60 16"><path fill="#1e90ff" d="M0 11c7 0 7-9 14-9s7 9 14 9 7-9 14-9 7 9 14 9v5H0z"/></svg>
     <h2 style="color:#145;">Choose Board Size</h2>
     <button class="size-btn" onclick="chooseBoardSize(5)">5 x 5 Board</button>
     <button class="size-btn" onclick="chooseBoardSize(10)">10 x 10 Board</button>
     <br><br>
-    <button class="back-btn" onclick="showModeMenu()">Back</button>
+    <button class="back-btn" onclick="showDifficultyMenu()">Back</button>
 </div>
 <div id="placementUI" class="center hidden" aria-label="Ship placement interface">
     <svg class="logo-wave" viewBox="0 0 60 16"><path fill="#1e90ff" d="M0 11c7 0 7-9 14-9s7 9 14 9 7-9 14-9 7 9 14 9v5H0z"/></svg>
@@ -285,15 +293,16 @@ function beep(type){
 }
 
 /* ========== UI NAVIGATION & GLOBAL STATE ========== */
-let selectedMode=null, selectedBoardSize=10;
+let selectedMode=null, selectedBoardSize=10, selectedDifficulty='hard';
 function showMainMenu(){ hideAll(); updateStats(); document.getElementById('mainMenu').classList.remove('hidden'); }
 function showModeMenu(){ hideAll(); document.getElementById('modeMenu').classList.remove('hidden'); }
+function showDifficultyMenu(){ hideAll(); document.getElementById('difficultyMenu').classList.remove('hidden'); }
 function showSizeMenu(){ hideAll(); document.getElementById('sizeMenu').classList.remove('hidden'); }
 function showHowToPlay(){ hideAll(); document.getElementById('howToPlay').classList.remove('hidden'); }
 function showGameUI(){ hideAll(); document.getElementById('gameUI').classList.remove('hidden'); }
 function showPlacementUI(){ hideAll(); document.getElementById('placementUI').classList.remove('hidden'); }
 function hideAll(){
-    ['mainMenu','howToPlay','modeMenu','gameUI','sizeMenu','placementUI'].forEach(id=>{
+    ['mainMenu','howToPlay','modeMenu','difficultyMenu','gameUI','sizeMenu','placementUI'].forEach(id=>{
         document.getElementById(id).classList.add('hidden');
     });
 }
@@ -303,6 +312,7 @@ let gridSize, ships, shipConfigs;
 let targetBoard, oceanBoard, computerShips, playerShips, playerShipPositions, computerShipPositions;
 let computerHits, playerHits, computerGuesses, gameOver;
 let gameMode = "basic";
+let gameDifficulty = 'hard';
 let salvoShots = 5, salvoComputerShots = 5, playerTurnActive = true;
 let salvoShotsFiredThisTurn = 0, availableShotsThisTurn = [];
 let placementStep=0, placementState, placementOrientation=true;
@@ -350,6 +360,10 @@ function restartPlacement(){
 }
 function chooseMode(mode) {
     selectedMode = mode;
+    showDifficultyMenu();
+}
+function chooseDifficulty(diff) {
+    selectedDifficulty = diff;
     showSizeMenu();
 }
 function chooseBoardSize(size) {
@@ -469,6 +483,7 @@ function placeShipsRandomly(grid) {
 function startGame() {
     setupConfigs();
     gameMode = selectedMode;
+    gameDifficulty = selectedDifficulty;
     targetBoard = Array.from({length:gridSize},()=>Array(gridSize).fill(0));
     oceanBoard = Array.from({length:gridSize},()=>Array(gridSize).fill(0));
     computerShips = Array.from({length:gridSize},()=>Array(gridSize).fill(0));
@@ -490,7 +505,7 @@ function startGame() {
     showGameUI(); drawBoards(); drawLabels();
     if(gameMode==="salvo") document.getElementById('salvoInfo').textContent = `Salvo Mode: You have ${salvoShots} shots this turn.`;
     else document.getElementById('salvoInfo').textContent="";
-    document.getElementById('status').textContent = "Your turn! Click a cell on the Target Board to fire.";
+    document.getElementById('status').textContent = `Your turn! (${gameDifficulty.charAt(0).toUpperCase()+gameDifficulty.slice(1)} AI) Click a cell on the Target Board to fire.`;
     updateShipsRemaining();
     updateStats();
 }
@@ -679,7 +694,7 @@ function resetAIState(){
 function computerFire(){
     if(gameOver) return;
     resetAIState();
-    let best = computerSmartShot();
+    let best = gameDifficulty==='easy'?computerRandomShot():computerSmartShot();
     let x=best[0],y=best[1];
     let hit=false, sunkText="";
     if (playerShips[x][y] !== 0) {
@@ -708,6 +723,14 @@ function computerFire(){
         beep('miss');
     }
     playerTurnActive = true;
+}
+
+function computerRandomShot(){
+    let available=[];
+    for(let x=0;x<gridSize;x++)
+        for(let y=0;y<gridSize;y++)
+            if(oceanBoard[x][y]===0) available.push([x,y]);
+    return available[Math.floor(Math.random()*available.length)];
 }
 
 /* Hunt and target: after hit, tries adjacent cells; prefers finishing off partial hits. */
@@ -745,7 +768,7 @@ function computerFireSalvo() {
     let fired = 0, coords = [];
     // Target mode: prioritize adjacent to known hits, else random
     while (fired < salvoComputerShots) {
-        let shot = computerSmartShot();
+        let shot = gameDifficulty==='easy'?computerRandomShot():computerSmartShot();
         // don't shoot same cell twice
         if (coords.some(([x,y])=>x===shot[0]&&y===shot[1])) continue;
         coords.push(shot); fired++;
